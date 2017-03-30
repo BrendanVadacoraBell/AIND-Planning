@@ -58,7 +58,31 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             '''
             loads = []
-            # TODO create all load ground actions from the domain Load action
+
+            #assign all the load action expressions to a list
+            load_actions = [expr("Load({}, {}, {})".format(cargo, plane, airport)) for cargo in self.cargos for plane in self.planes for airport in self.airports]
+            #assign the cargo at airport preconditions
+            load_preconditions_pos_cargo_airport = [expr("At({},{})".format(cargo, airport)) for cargo in self.cargos for airport in self.airports]
+            #assign the plane at airport preconditions
+            load_preconditions_pos_plane_airport = [expr("At({},{})".format(plane, airport)) for plane in self.planes for airport in self.airports]
+            #assign the Cargo precondition
+            load_preconditions_pos_cargo = [expr("Cargo({})".format(cargo)) for cargo in self.cargos]
+            #assign the Plane precondition
+            load_preconditions_pos_plane = [expr("Plane({})".format(plane)) for plane in self.planes]
+            #assign the Airport
+            load_preconditions_pos_airport = [expr("Airport({})".format(airport)) for airport in self.airports]
+            #list and zip all the above preconditions
+            load_preconditions_pos = list(zip(load_preconditions_pos_cargo_airport, load_preconditions_pos_plane_airport, load_preconditions_pos_cargo, load_preconditions_pos_plane, load_preconditions_pos_airport))
+            #assign the negative preconditions
+            load_preconditions_neg = []
+            #assign the positive effects
+            load_effects_add = [expr("In({},{})".format(cargo, plane)) for cargo in self.cargos for plane in self.planes]
+            #assign the negative effects (removes the cargo at airport precondition expression)
+            load_effects_rem = load_preconditions_pos_cargo_airport
+            #for each cargo, add the entire action to the loads list
+            for i in range(len(self.cargos)-1):
+                loads.append(Action(load_actions[i], [list(load_preconditions_pos[i]), load_preconditions_neg], [load_effects_add, load_effects_rem]))
+                                       
             return loads
 
         def unload_actions():
