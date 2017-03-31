@@ -149,8 +149,17 @@ class AirCargoProblem(Problem):
             e.g. 'FTTTFF'
         :return: list of Action objects
         """
-        # TODO implement
+
         possible_actions = []
+
+        """For each state, check if state is true
+           If true, add the action for actions list at
+           state index to the possible actions list
+        """
+        for idx, _state in enumerate(state):
+            if(_state == "T"):
+                possible_actions.append(self.actions_list[idx])
+        
         return possible_actions
 
     def result(self, state: str, action: Action):
