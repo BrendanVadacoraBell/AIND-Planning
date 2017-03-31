@@ -82,7 +82,7 @@ class AirCargoProblem(Problem):
             #for each cargo, add the entire action to the loads list
             for i in range(len(self.cargos)-1):
                 loads.append(Action(load_actions[i], [list(load_preconditions_pos[i]), load_preconditions_neg], [load_effects_add, load_effects_rem]))
-                                       
+                                     
             return loads
 
         def unload_actions():
@@ -91,7 +91,31 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             '''
             unloads = []
-            # TODO create all Unload ground actions from the domain Unload action
+
+            #assign all the load action expressions to a list
+            unload_actions = [expr("Unload({}, {}, {})".format(cargo, plane, airport)) for cargo in self.cargos for plane in self.planes for airport in self.airports]
+            #assign the cargo in plane preconditions
+            unload_preconditions_pos_cargo_plane = [expr("In({},{})".format(cargo, plane)) for cargo in self.cargos for plane in self.planes]
+            #assign the plane at airport preconditions
+            unload_preconditions_pos_plane_airport = [expr("At({},{})".format(plane, airport)) for plane in self.planes for airport in self.airports]
+            #assign the Cargo precondition
+            unload_preconditions_pos_cargo = [expr("Cargo({})".format(cargo)) for cargo in self.cargos]
+            #assign the Plane precondition
+            unload_preconditions_pos_plane = [expr("Plane({})".format(plane)) for plane in self.planes]
+            #assign the Airport
+            unload_preconditions_pos_airport = [expr("Airport({})".format(airport)) for airport in self.airports]
+            #list and zip all the above preconditions
+            unload_preconditions_pos = list(zip(unload_preconditions_pos_cargo_plane, unload_preconditions_pos_plane_airport, unload_preconditions_pos_cargo, unload_preconditions_pos_plane, unload_preconditions_pos_airport))
+            #assign the negative preconditions
+            unload_preconditions_neg = []
+            #assign the positive effects
+            unload_effects_add = [expr("At({},{})".format(cargo, airport)) for cargo in self.cargos for airport in self.airports]
+            #assign the negative effects (removes the cargo in plane precondition expression)
+            unload_effects_rem = unload_preconditions_pos_cargo_plane
+            #for each cargo, add the entire action to the unloads list
+            for i in range(len(self.cargos)-1):
+                unloads.append(Action(unload_actions[i], [list(unload_preconditions_pos[i]), unload_preconditions_neg], [unload_effects_add, unload_effects_rem]))
+                                       
             return unloads
 
         def fly_actions():
