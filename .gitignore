@@ -22,3 +22,5 @@ aimacode/__pycache__/utils.cpython-36.pyc
 tests/__pycache__/__init__.cpython-36.pyc
 
 tests/__pycache__/test_my_air_cargo_problems.cpython-36.pyc
+
+*.pyc
