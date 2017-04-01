@@ -205,8 +205,34 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         '''
-        # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
         count = 0
+        counts = []
+        for action in self.actions_list:
+            action.precond_pos = []
+            action.precond_neg = []
+        
+        child_nodes = node.expand(self)
+
+        for child_node in child_nodes:
+            if self.goal_test(child_node.state):
+                solution_length = len(child_node.solution())
+
+                count += solution_length
+            else:
+                found = False
+                while not found:
+
+                    new_child_node = child_node.child_node(self, child_node.action)
+                    if self.goal_test(new_child_node.state) or new_child_node.action == child_node.action:
+                        solution_length = len(new_child_node.solution())
+                        
+                        counts.append(solution_length)
+                        found = True
+                    else:
+                        child_node = new_child_node
+
+        count = min(counts)
+        
         return count
 
 
