@@ -304,13 +304,27 @@ class PlanningGraph():
         :return:
             adds A nodes to the current level in self.a_levels[level]
         '''
-        # TODO add action A level to the planning graph as described in the Russell-Norvig text
         # 1. determine what actions to add and create those PgNode_a objects
         # 2. connect the nodes to the previous S literal level
         # for example, the A0 level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
         #   set iff all prerequisite literals for the action hold in S0.  This can be accomplished by testing
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
+        s_nodes = self.s_levels[level]
+        action_set = set()
+        
+        for action in self.all_actions:
+            action_node = PgNode_a(action)
+            if action_node.prenodes.issubset(s_nodes):
+                action_set.add(action_node)
+                self.add_action_to_sNode(action_node, level)
+
+        self.a_levels.insert(level, action_set)
+
+
+    def add_action_to_sNode(self, action: PgNode_a, level: int):
+        for s_node in self.s_levels[level]:
+            s_node.children.add(action)
 
     def add_literal_level(self, level):
         ''' add an S (literal) level to the Planning Graph
@@ -321,7 +335,6 @@ class PlanningGraph():
         :return:
             adds S nodes to the current level in self.s_levels[level]
         '''
-        # TODO add literal S level to the planning graph as described in the Russell-Norvig text
         # 1. determine what literals to add
         # 2. connect the nodes
         # for example, every A node in the previous level has a list of S nodes in effnodes that represent the effect
@@ -329,6 +342,18 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+        a_nodes = self.a_levels[level-1]
+        s_nodes = set()
+
+        for a_node in a_nodes:
+            action_effect_s_nodes = a_node.effnodes
+            for action_effect_s_node in action_effect_s_nodes:
+                a_node.children.add(action_effect_s_node)
+                action_effect_s_node.parents.add(a_node)
+                s_nodes.add(action_effect_s_node)
+                
+        self.s_levels.insert(level, s_nodes)
+        
 
     def update_a_mutex(self, nodeset):
         ''' Determine and update sibling mutual exclusion for A-level nodes
@@ -389,12 +414,12 @@ class PlanningGraph():
         node_a1_action_effect_add = node_a1.action.effect_add
         node_a2_action_effect_rem = node_a2.action.effect_rem
 
-        if list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_effect_rem): return True
+        if self.list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_effect_rem): return True
 
         node_a1_action_effect_rem = node_a1.action.effect_rem
         node_a2_action_effect_add = node_a2.action.effect_add
 
-        if list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_effect_add): return True
+        if self.list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_effect_add): return True
         
         return False
 
@@ -415,22 +440,22 @@ class PlanningGraph():
         node_a1_action_effect_add = node_a1.action.effect_add
         node_a2_action_precond_neg = node_a2.action.precond_neg
 
-        if list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_precond_neg): return True
+        if self.list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_precond_neg): return True
 
         node_a1_action_effect_rem = node_a1.action.effect_rem
         node_a2_action_precond_pos = node_a2.action.precond_pos
 
-        if list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_precond_pos): return True
+        if self.list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_precond_pos): return True
 
         node_a1_action_precond_neg = node_a1.action.precond_neg
         node_a2_action_effect_add = node_a2.action.effect_add
 
-        if list_pair_have_common_elements(node_a2_action_effect_add, node_a1_action_precond_neg): return True
+        if self.list_pair_have_common_elements(node_a2_action_effect_add, node_a1_action_precond_neg): return True
 
         node_a1_action_precond_pos = node_a1.action.precond_pos
         node_a2_action_effect_rem = node_a2.action.effect_rem
 
-        if list_pair_have_common_elements(node_a2_action_effect_rem, node_a1_action_precond_pos): return True
+        if self.list_pair_have_common_elements(node_a2_action_effect_rem, node_a1_action_precond_pos): return True
             
         return False
 
@@ -445,19 +470,15 @@ class PlanningGraph():
         :return: bool
         '''
 
-        node_a1_action_precond_pos = node_a1.action.precond_pos
-        node_a2_action_precond_neg = node_a2.action.precond_neg
+        node_parent_pairs = [(node_a1_parent, node_a2_parent) for node_a1_parent in node_a1.parents for node_a2_parent in node_a2.parents]
 
-        if list_pair_have_common_elements(node_a1_action_precond_pos, node_a2_action_precond_neg): return True
+        for node_parent_pair in node_parent_pairs:
+            if not node_parent_pair[0].is_mutex(node_parent_pair[1]):
+                return False
 
-        node_a1_action_precond_neg = node_a1.action.precond_neg
-        node_a2_action_precond_pos = node_a2.action.precond_pos
+        return True
 
-        if list_pair_have_common_elements(node_a1_action_precond_neg, node_a2_action_precond_pos): return True
-        
-        return False
-
-    def list_pair_have_common_elements(list1 : list, list2: list) -> bool:
+    def list_pair_have_common_elements(self, list1 : list, list2: list) -> bool:
         for el in list1:
             if el in list2:
                 return True
@@ -495,8 +516,7 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         '''
-        return (node_s1.symbol == node_s2.symbol)
-               and (node_s1.is_pos != node_s2.is_pos)
+        return (node_s1.symbol == node_s2.symbol) and (node_s1.is_pos != node_s2.is_pos)
         return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
@@ -515,7 +535,14 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         '''
-        return node_s1.is_mutex(node_s2)
+
+        node_parent_pairs = [(node_s1_parent, node_s2_parent) for node_s1_parent in node_s1.parents for node_s2_parent in node_s2.parents]
+
+        for node_parent_pair in node_parent_pairs:
+            if not node_parent_pair[0].is_mutex(node_parent_pair[1]):
+                return False
+
+        return True
 
     def h_levelsum(self) -> int:
         '''The sum of the level costs of the individual goals (admissible if goals independent)
@@ -523,14 +550,20 @@ class PlanningGraph():
         :return: int
         '''
         level_sum = 0
+
+        tested_goal_states = []
+        
         # for each goal in the problem, determine the level cost, then add them together
-        for level, node in enumerate(self.s_levels):
-            level_sum += h_levelcost(node, level)
+        for level, node_set in enumerate(self.s_levels):
+            for node in node_set:
+                if node.literal not in tested_goal_states:
+                    level_sum += self.h_levelcost(node, level)
+                    tested_goal_states.append(node.literal)
             
         return level_sum
 
-    def h_levelcost(node: PgNode_s, level: int) -> int:
-        if self.problem.goal == node.literal:
+    def h_levelcost(self, node: PgNode_s, level: int) -> int:
+        if node.literal in self.problem.goal:
             return level
 
         return 0
