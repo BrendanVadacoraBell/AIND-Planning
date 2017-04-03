@@ -386,7 +386,16 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         '''
-        # TODO test for Inconsistent Effects between nodes
+        node_a1_action_effect_add = node_a1.action.effect_add
+        node_a2_action_effect_rem = node_a2.action.effect_rem
+
+        if list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_effect_rem): return True
+
+        node_a1_action_effect_rem = node_a1.action.effect_rem
+        node_a2_action_effect_add = node_a2.action.effect_add
+
+        if list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_effect_add): return True
+        
         return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -403,7 +412,26 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         '''
-        # TODO test for Interference between nodes
+        node_a1_action_effect_add = node_a1.action.effect_add
+        node_a2_action_precond_neg = node_a2.action.precond_neg
+
+        if list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_precond_neg): return True
+
+        node_a1_action_effect_rem = node_a1.action.effect_rem
+        node_a2_action_precond_pos = node_a2.action.precond_pos
+
+        if list_pair_have_common_elements(node_a1_action_effect_rem, node_a2_action_precond_pos): return True
+
+        node_a1_action_precond_neg = node_a1.action.precond_neg
+        node_a2_action_effect_add = node_a2.action.effect_add
+
+        if list_pair_have_common_elements(node_a2_action_effect_add, node_a1_action_precond_neg): return True
+
+        node_a1_action_precond_pos = node_a1.action.precond_pos
+        node_a2_action_effect_rem = node_a2.action.effect_rem
+
+        if list_pair_have_common_elements(node_a2_action_effect_rem, node_a1_action_precond_pos): return True
+            
         return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -417,7 +445,22 @@ class PlanningGraph():
         :return: bool
         '''
 
-        # TODO test for Competing Needs between nodes
+        node_a1_action_precond_pos = node_a1.action.precond_pos
+        node_a2_action_precond_neg = node_a2.action.precond_neg
+
+        if list_pair_have_common_elements(node_a1_action_precond_pos, node_a2_action_precond_neg): return True
+
+        node_a1_action_precond_neg = node_a1.action.precond_neg
+        node_a2_action_precond_pos = node_a2.action.precond_pos
+
+        if list_pair_have_common_elements(node_a1_action_precond_neg, node_a2_action_precond_pos): return True
+        
+        return False
+
+    def list_pair_have_common_elements(list1 : list, list2: list) -> bool:
+        for el in list1:
+            if el in list2:
+                return True
         return False
 
     def update_s_mutex(self, nodeset: set):
@@ -452,7 +495,8 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         '''
-        # TODO test for negation between nodes
+        return (node_s1.symbol == node_s2.symbol)
+               and (node_s1.is_pos != node_s2.is_pos)
         return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
@@ -471,8 +515,7 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         '''
-        # TODO test for Inconsistent Support between nodes
-        return False
+        return node_s1.is_mutex(node_s2)
 
     def h_levelsum(self) -> int:
         '''The sum of the level costs of the individual goals (admissible if goals independent)
