@@ -310,19 +310,36 @@ class PlanningGraph():
         #   set iff all prerequisite literals for the action hold in S0.  This can be accomplished by testing
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
+
+        #get all the s_nodes for the current level
         s_nodes = self.s_levels[level]
+        #create the set that each action will be added to
         action_set = set()
-        
+
+        '''
+        As stated above, for each action in all actions, create an action node. If said node has
+        prerequisite nodes that are a subset of the s_nodes for the current level then add the
+        newly created action node to the set. Also, connet the action node to all s_nodes of the
+        given level
+        '''
         for action in self.all_actions:
             action_node = PgNode_a(action)
             if action_node.prenodes.issubset(s_nodes):
                 action_set.add(action_node)
                 self.add_action_to_sNode(action_node, level)
 
+        #insert the set of action nodes for this level to the a_levels list
         self.a_levels.insert(level, action_set)
 
 
     def add_action_to_sNode(self, action: PgNode_a, level: int):
+        '''add an A (action) PgNode_a to all PgNode_s at the given level
+
+        :param action: PgNode_a
+            the action node to be connected to the associated s-nodes
+        :param level: int
+            the level of s-nodes to connect the action node to
+        '''
         for s_node in self.s_levels[level]:
             s_node.children.add(action)
 
@@ -342,16 +359,27 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+
+        #get all the action nodes at the previous level
         a_nodes = self.a_levels[level-1]
+
+        #create the set that each s node will be added to
         s_nodes = set()
 
+        '''
+        As stated above, for each action node in the previous level, get all the effect nodes (PgNode_s).
+        Then, for each effect s-node in the effect nodes list, add the effect node as a child node to the
+        action node, add action node as a parent to the effect node and add the effect node to the newly
+        created set of s nodes
+        '''
         for a_node in a_nodes:
             action_effect_s_nodes = a_node.effnodes
             for action_effect_s_node in action_effect_s_nodes:
                 a_node.children.add(action_effect_s_node)
                 action_effect_s_node.parents.add(a_node)
                 s_nodes.add(action_effect_s_node)
-                
+
+        #add the set of s-nodes to the given level
         self.s_levels.insert(level, s_nodes)
         
 
@@ -411,9 +439,11 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         '''
+        #check if the effects of each action are opposites Russel-Norvig ed 3 10.3
         node_a1_action_effect_add = node_a1.action.effect_add
         node_a2_action_effect_rem = node_a2.action.effect_rem
 
+        #return True if opposites
         if self.list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_effect_rem): return True
 
         node_a1_action_effect_rem = node_a1.action.effect_rem
@@ -437,9 +467,11 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         '''
+        #check if effect and precondition are opposites Russel-Norvig ed 3 10.3
         node_a1_action_effect_add = node_a1.action.effect_add
         node_a2_action_precond_neg = node_a2.action.precond_neg
 
+        #return true if opposites
         if self.list_pair_have_common_elements(node_a1_action_effect_add, node_a2_action_precond_neg): return True
 
         node_a1_action_effect_rem = node_a1.action.effect_rem
@@ -469,9 +501,10 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         '''
-
+        #create a tuple of parent node relationships 
         node_parent_pairs = [(node_a1_parent, node_a2_parent) for node_a1_parent in node_a1.parents for node_a2_parent in node_a2.parents]
 
+        #for each parent node pair, check if one is mutex of the other, and return false is not Russel-Norvig ed 3 10.3
         for node_parent_pair in node_parent_pairs:
             if not node_parent_pair[0].is_mutex(node_parent_pair[1]):
                 return False
@@ -479,6 +512,12 @@ class PlanningGraph():
         return True
 
     def list_pair_have_common_elements(self, list1 : list, list2: list) -> bool:
+        ''' Returns true if the given lists have common elements
+
+        :param list1: list
+        :param list2: list
+        :return bool
+        '''
         for el in list1:
             if el in list2:
                 return True
@@ -516,8 +555,8 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         '''
+        #check if the nodes have the same symbol but are opposites Russel-Norvig ed 3 10.3
         return (node_s1.symbol == node_s2.symbol) and (node_s1.is_pos != node_s2.is_pos)
-        return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
         '''
@@ -536,8 +575,10 @@ class PlanningGraph():
         :return: bool
         '''
 
+        #get the pairs of parents for each parent in node 1 and node 2
         node_parent_pairs = [(node_s1_parent, node_s2_parent) for node_s1_parent in node_s1.parents for node_s2_parent in node_s2.parents]
 
+        #For each parent pair, check if they are mutex, if not, return False Russel-Norvig ed 3 10.3
         for node_parent_pair in node_parent_pairs:
             if not node_parent_pair[0].is_mutex(node_parent_pair[1]):
                 return False
@@ -554,6 +595,7 @@ class PlanningGraph():
         tested_goal_states = []
         
         # for each goal in the problem, determine the level cost, then add them together
+        #Russel-Norvig text ed 3 10.3.1
         for level, node_set in enumerate(self.s_levels):
             for node in node_set:
                 if node.literal not in tested_goal_states:
@@ -563,6 +605,13 @@ class PlanningGraph():
         return level_sum
 
     def h_levelcost(self, node: PgNode_s, level: int) -> int:
+        '''return the level cost of the current node if
+        if it is part of the goal state Russel-Norvig text ed 3 10.3.1
+
+        :param node: PgNode_s
+        :param level: int
+        :return: int
+        '''
         if node.literal in self.problem.goal:
             return level
 
