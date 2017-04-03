@@ -52,7 +52,8 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             '''
             loads = []
-
+            
+            #for each object, build the preconditions, effects and the actions
             for airport in self.airports:
                 for plane in self.planes:
                     for cargo in self.cargos:
@@ -75,6 +76,7 @@ class AirCargoProblem(Problem):
             '''
             unloads = []
 
+            #for each object, build the preconditions, effects and the actions
             for airport in self.airports:
                 for plane in self.planes:
                     for cargo in self.cargos:
@@ -211,6 +213,14 @@ class AirCargoProblem(Problem):
         '''
         count = 0
 
+        '''
+        As the above doc and Russel-Norvig text states, the preconditions
+        of each action can be ignored. The quickest way to do this is: for every
+        state in the current node, check if the state is false, i.e. cannot be
+        executed because the preconidtions are false, then check if that false
+        state is a goal for the problem. If true, increment the count.
+
+        '''
         for idx, state in enumerate(node.state):
             if node.state[idx] is 'F' and self.state_map[idx] in self.goal:
                 count += 1
