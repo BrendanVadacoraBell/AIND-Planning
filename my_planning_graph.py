@@ -523,6 +523,14 @@ class PlanningGraph():
         :return: int
         '''
         level_sum = 0
-        # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
+        for level, node in enumerate(self.s_levels):
+            level_sum += h_levelcost(node, level)
+            
         return level_sum
+
+    def h_levelcost(node: PgNode_s, level: int) -> int:
+        if self.problem.goal == node.literal:
+            return level
+
+        return 0
